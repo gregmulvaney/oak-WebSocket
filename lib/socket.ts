@@ -1,8 +1,8 @@
 import { WebSocket } from "../deps.ts";
-import { SocketID, Room } from "./middleware.ts"; // Fix this shit
+import { SocketID, Room } from "./middleware.ts"; // Fix this shit. Probably a types file or something.
 
 export class Socket extends EventTarget {
-  private readonly socket: SocketID;
+  public readonly socket: SocketID;
   private server: any;
 
   constructor(socket: SocketID, server: any) {
@@ -12,11 +12,24 @@ export class Socket extends EventTarget {
   }
 
   public async open() {
-    this.join(this.socket, "Lobby");
-    console.log(this.server.rooms);
+    // Join the default room
+    // TODO: make this room name  a preference
+    this.join("Lobby", this.socket);
+
+    // Locate the socket connection in the Sockets map
+    // TODO: Question if this is a dumb way to do this
+    const sock: WebSocket = this.server.sockets.get(this.socket);
+
+    // Handle Socket events
+    for await (const ev of sock) {
+      if (typeof ev === "string") {
+        console.log(ev);
+        sock.send(ev);
+      }
+    }
   }
 
-  public join(id: SocketID, room: Room) {
+  public join(room: Room, id = this.socket) {
     if (!this.server.sids.has(id)) {
       this.server.sids.set(id, new Set());
     }
@@ -26,5 +39,6 @@ export class Socket extends EventTarget {
       this.server.rooms.set(room, new Set());
     }
     this.server.rooms.get(room).add(id);
+    console.log(this.server.rooms);
   }
 }
