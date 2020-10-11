@@ -6,10 +6,9 @@ const wss = new WebSocketMiddleware();
 
 // This is awful and I hate it. There has to be a better way
 wss.addEventListener("connect", ({ ws }) => {
-  if (ws) {
-    ws.join("test");
-    console.log("Socket Connected");
-  }
+  console.log("Socket Connected");
+
+  ws!.join("Test2");
 });
 
 app.use(wss.connect);
