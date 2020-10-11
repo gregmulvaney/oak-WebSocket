@@ -1,4 +1,4 @@
-import { WebSocket } from "../deps.ts";
+import { WebSocket, isWebSocketCloseEvent } from "../deps.ts";
 import { SocketID, Room } from "./middleware.ts"; // Fix this shit. Probably a types file or something.
 
 export class Socket extends EventTarget {
@@ -24,7 +24,21 @@ export class Socket extends EventTarget {
     for await (const ev of sock) {
       if (typeof ev === "string") {
         console.log(ev);
-        sock.send(ev);
+        await sock.send(ev);
+      } else if (ev instanceof Uint8Array) {
+        console.log(ev);
+      } else if (isWebSocketCloseEvent(ev)) {
+        // Remove the socket connection from the sockets map
+        this.server.sockets.delete(this.socket);
+
+        // Remove the sockets from any rooms it is associated with
+        const rooms = this.server.sids.get(this.socket);
+        for await (const room of rooms) {
+          this.server.rooms.get(room).delete(this.socket);
+        }
+
+        // Remove the socket from the SocketID to Rooms map
+        this.server.sids.delete(this.socket);
       }
     }
   }

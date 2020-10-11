@@ -27,11 +27,11 @@ class WebSocketConnectEvent extends Event {
     super("connect", eventInitDict);
     this.ws = eventInitDict.ws;
     if (this.ws) {
-      this.on(this.ws); // this is stupid and I should hate myself for it
+      this.on(this.ws);
     }
   }
-
-  public on(socket: Socket) {
+  // This is a bad hack because I am stupid
+  public on(socket: Socket): Socket {
     return socket;
   }
 }
@@ -58,6 +58,7 @@ export class WebSocketMiddleware extends EventTarget {
         w: bufWriter,
         headers,
       } = ctx.request.serverRequest;
+      // Try to create a websocket connection
       try {
         const sock: WebSocket = await acceptWebSocket({
           conn,
@@ -65,11 +66,11 @@ export class WebSocketMiddleware extends EventTarget {
           bufWriter,
           headers,
         });
-        // Generate SocketID and add to the sockets map
+        // Generate a unique SocketID and add to the sockets map
         const socketID: SocketID = await v4.generate();
         this.sockets.set(socketID, sock);
         const ws: Socket = new Socket(socketID, this);
-        // Dispatch the WebSocket connect event
+        // Dispatch the WebSocket connect event. Im still not happy about this
         this.dispatchEvent(new WebSocketConnectEvent({ ws }));
         await ws.open();
       } catch (error) {

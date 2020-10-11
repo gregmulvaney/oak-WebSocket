@@ -4,11 +4,11 @@ import { WebSocketMiddleware } from "../mod.ts";
 const app = new Application();
 const wss = new WebSocketMiddleware();
 
-// This is awful and I hate it. Repeal and replace this
-wss.addEventListener("connect", (socket) => {
-  const ws = socket.ws;
+// This is awful and I hate it. There has to be a better way
+wss.addEventListener("connect", ({ ws }) => {
   if (ws) {
-    ws.join("Test");
+    ws.join("test");
+    console.log("Socket Connected");
   }
 });
 
