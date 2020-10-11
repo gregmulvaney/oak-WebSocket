@@ -1,95 +1,53 @@
-import { acceptable, acceptWebSocket, WebSocket, v4 } from "../deps.ts";
+import {
+  acceptable,
+  acceptWebSocket,
+  Context,
+  v4,
+  WebSocket,
+} from "../deps.ts";
+import { Room, SocketID } from "./types.ts";
 import { Socket } from "./socket.ts";
 
-export type SocketID = string;
-export type Room = string;
-
-interface WebSocketConnectEventListener {
-  (evt: WebSocketConnectEvent): void | Promise<void>;
-}
-
-interface WebSocketConnectEventListenerObject {
-  handleEvent(evt: WebSocketConnectEvent): void | Promise<void>;
-}
-
-interface WebSocketConnectEventInit extends EventInit {
-  ws?: Socket;
-}
-
-type WebSocketConnectEventListenerOrEventListenerObject =
-  | WebSocketConnectEventListener
-  | WebSocketConnectEventListenerObject;
-
-// Do I even know how to code or am I just that fuckin dumb
-class WebSocketConnectEvent extends Event {
-  ws?: Socket;
-  constructor(eventInitDict: WebSocketConnectEventInit) {
-    super("connect", eventInitDict);
-    this.ws = eventInitDict.ws;
-    if (this.ws) {
-      this.on(this.ws);
-    }
-  }
-  // This is a bad hack because I am stupid
-  public on(socket: Socket): Socket {
-    return socket;
-  }
-}
-
-export class WebSocketMiddleware extends EventTarget {
+export class Middleware {
   protected sockets: Map<SocketID, WebSocket> = new Map();
   protected rooms: Map<Room, Set<SocketID>> = new Map();
-  protected sids: Map<SocketID, Set<Room>> = new Map();
+  protected socketRooms: Map<SocketID, Set<Room>> = new Map();
 
   constructor() {
-    super();
     this.connect = this.connect.bind(this);
   }
 
-  public async connect(ctx: any): Promise<any> {
-    // Upgrade request type
+  public async connect(ctx: Context) {
+    // Upgrade the connection
     await ctx.upgrade();
 
-    // Check if request is acceptable WebSocket connection
+    // Check if the connection is an acceptable WebSocket
     if (acceptable(ctx.request.serverRequest)) {
+      // Get connection details from the request
       const {
         conn,
         r: bufReader,
         w: bufWriter,
         headers,
       } = ctx.request.serverRequest;
-      // Try to create a websocket connection
       try {
+        // Create the WebSocket Connection
         const sock: WebSocket = await acceptWebSocket({
           conn,
           bufReader,
           bufWriter,
           headers,
         });
-        // Generate a unique SocketID and add to the sockets map
-        const socketID: SocketID = await v4.generate();
+
+        // Generate a SocketID and add it to the middlewares Socket Map
+        const socketID: SocketID = v4.generate();
         this.sockets.set(socketID, sock);
-        const ws: Socket = new Socket(socketID, this);
-        // Dispatch the WebSocket connect event. Im still not happy about this
-        this.dispatchEvent(new WebSocketConnectEvent({ ws }));
+        // Create a new Socket class instance
+        const ws = new Socket(socketID, this);
         await ws.open();
       } catch (error) {
-        throw new TypeError(error);
+        console.error("Error creating a WebSocket connection");
       }
     }
-  }
-
-  addEventListener(
-    type: "connect",
-    listener: WebSocketConnectEventListenerOrEventListenerObject | null,
-    options?: boolean | AddEventListenerOptions
-  ): void;
-
-  addEventListener(
-    type: "connect",
-    listener: EventListenerOrEventListenerObject,
-    options?: boolean | AddEventListenerOptions
-  ) {
-    super.addEventListener(type, listener, options);
   }
 }
