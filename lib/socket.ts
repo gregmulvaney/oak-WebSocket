@@ -15,7 +15,7 @@ export class Socket extends EventEmitter {
   }
 
   // Do stuff once socket is open
-  public async open() {
+  public async open(): Promise<void> {
     // Find the relevant socket in the Middlewares sockets Map using the SocketID
     const sock: WebSocket = this.server.sockets.get(this.SocketID);
 
@@ -42,7 +42,10 @@ export class Socket extends EventEmitter {
     }
   }
 
-  public async join(room: Room, socketID: SocketID = this.SocketID) {
+  public async join(
+    room: Room,
+    socketID: SocketID = this.SocketID
+  ): Promise<void> {
     if (!this.server.rooms.has(room)) {
       this.server.rooms.set(room, new Set<SocketID>());
     }

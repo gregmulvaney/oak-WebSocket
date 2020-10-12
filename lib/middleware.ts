@@ -19,7 +19,11 @@ export class oakWebSocket extends EventEmitter {
     this.connect = this.connect.bind(this);
   }
 
-  public async connect(ctx: any) {
+  /**
+   * Importing the context type breaks everything because of conflicting versioning issues
+   * @param ctx
+   */
+  public async connect(ctx: any): Promise<void> {
     await ctx.upgrade();
 
     if (acceptable(ctx.request.serverRequest)) {
@@ -40,7 +44,10 @@ export class oakWebSocket extends EventEmitter {
         // Generate an ID for the websocket and store it in the Sockets Map
         const socketID: SocketID = v4.generate();
         this.sockets.set(socketID, sock);
+
+        // Instantiate a new Socket class
         const ws = new Socket(socketID, this);
+        // Emit a connection event
         this.emit("connect", ws);
         await ws.open();
       } catch (error) {
