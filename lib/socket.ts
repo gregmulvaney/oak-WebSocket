@@ -5,11 +5,13 @@ import type { oakWebSocket } from "./middleware.ts";
 export class Socket extends EventEmitter {
   protected SocketID: SocketID;
   protected server: any;
+  protected id: SocketID;
 
   constructor(socketID: SocketID, server: oakWebSocket) {
     super();
     this.SocketID = socketID;
     this.server = server;
+    this.id = this.SocketID;
   }
 
   // Do stuff once socket is open
@@ -27,6 +29,15 @@ export class Socket extends EventEmitter {
       } else if (ev instanceof Uint8Array) {
         console.log(ev);
       } else if (isWebSocketCloseEvent(ev)) {
+        // Cleanup socket on close event
+        this.server.sockets.delete(this.SocketID);
+        const rooms = this.server.socketRooms.get(this.id);
+        if (rooms) {
+          for (const room of rooms) {
+            this.server.rooms.get(room).delete(this.SocketID);
+          }
+        }
+        this.server.socketRooms.delete(this.SocketID);
       }
     }
   }
@@ -37,9 +48,11 @@ export class Socket extends EventEmitter {
     }
     this.server.rooms.get(room).add(socketID);
 
-    if (!this.server.socketIDs.has(socketID)) {
-      this.server.socketIDs.set(socketID, new Set<Room>());
+    if (!this.server.socketRooms.has(socketID)) {
+      this.server.socketRooms.set(socketID, new Set<Room>());
     }
-    this.server.socketIDs.get(socketID).add(room);
+    this.server.socketRooms.get(socketID).add(room);
+
+    this.emit("joined", room);
   }
 }

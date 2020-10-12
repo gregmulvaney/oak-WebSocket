@@ -12,7 +12,7 @@ import { Socket } from "./socket.ts";
 export class oakWebSocket extends EventEmitter {
   protected sockets: Map<SocketID, WebSocket> = new Map();
   protected rooms: Map<Room, Set<SocketID>> = new Map();
-  protected socketIDs: Map<SocketID, Set<Room>> = new Map();
+  protected socketRooms: Map<SocketID, Set<Room>> = new Map();
 
   constructor() {
     super();
