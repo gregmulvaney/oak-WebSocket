@@ -1,13 +1,17 @@
-import { Application, Router } from "https://deno.land/x/oak@v6.3.1/mod.ts";
-import { Middleware } from "../mod.ts";
+import { Application } from "https://deno.land/x/oak@v6.3.1/mod.ts";
+import { oakWebSocket } from "../mod.ts";
 
 const app = new Application();
-const wss = new Middleware();
-const router = new Router();
+const wss = new oakWebSocket();
 
-router.get("/", wss.connect);
+wss.on("connect", (sock) => {
+  console.log("Socket Connected");
+  sock.on("message", (message: string) => {
+    console.log(message);
+  });
+});
 
-app.use(router.routes(), router.allowedMethods());
+app.use(wss.connect);
 
 app.addEventListener("listen", () => {
   console.log("Listening on port 5000");

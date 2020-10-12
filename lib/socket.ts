@@ -1,12 +1,13 @@
-import { WebSocket, isWebSocketCloseEvent } from "../deps.ts";
+import { WebSocket, isWebSocketCloseEvent, EventEmitter } from "../deps.ts";
 import { Room, SocketID } from "./types.ts";
-import type { Middleware } from "./middleware.ts";
+import type { oakWebSocket } from "./middleware.ts";
 
-export class Socket {
+export class Socket extends EventEmitter {
   protected SocketID: SocketID;
   protected server: any;
 
-  constructor(socketID: SocketID, server: Middleware) {
+  constructor(socketID: SocketID, server: oakWebSocket) {
+    super();
     this.SocketID = socketID;
     this.server = server;
   }
@@ -16,14 +17,16 @@ export class Socket {
     // Find the relevant socket in the Middlewares sockets Map using the SocketID
     const sock: WebSocket = this.server.sockets.get(this.SocketID);
 
+    await this.join("Lobby", this.SocketID);
+
     // Handle WebSocket events
-    for await (const event of sock) {
-      if (typeof event === "string") {
-        console.log(event);
+    for await (const ev of sock) {
+      if (typeof ev === "string") {
+        this.emit("message", ev);
         await sock.send("Works");
-      } else if (event instanceof Uint8Array) {
-        console.log(event);
-      } else if (isWebSocketCloseEvent(event)) {
+      } else if (ev instanceof Uint8Array) {
+        console.log(ev);
+      } else if (isWebSocketCloseEvent(ev)) {
       }
     }
   }
@@ -34,9 +37,9 @@ export class Socket {
     }
     this.server.rooms.get(room).add(socketID);
 
-    if (!this.server.socketRooms.has(socketID)) {
-      this.server.socketRooms.set(socketID, new Set<Room>());
+    if (!this.server.socketIDs.has(socketID)) {
+      this.server.socketIDs.set(socketID, new Set<Room>());
     }
-    this.server.socketRooms.get(socketID).add(room);
+    this.server.socketIDs.get(socketID).add(room);
   }
 }

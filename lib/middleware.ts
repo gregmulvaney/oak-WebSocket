@@ -1,29 +1,28 @@
 import {
   acceptable,
   acceptWebSocket,
-  Context,
-  v4,
   WebSocket,
+  EventEmitter,
+  v4,
 } from "../deps.ts";
+
 import { Room, SocketID } from "./types.ts";
 import { Socket } from "./socket.ts";
 
-export class Middleware {
+export class oakWebSocket extends EventEmitter {
   protected sockets: Map<SocketID, WebSocket> = new Map();
   protected rooms: Map<Room, Set<SocketID>> = new Map();
-  protected socketRooms: Map<SocketID, Set<Room>> = new Map();
+  protected socketIDs: Map<SocketID, Set<Room>> = new Map();
 
   constructor() {
+    super();
     this.connect = this.connect.bind(this);
   }
 
-  public async connect(ctx: Context) {
-    // Upgrade the connection
+  public async connect(ctx: any) {
     await ctx.upgrade();
 
-    // Check if the connection is an acceptable WebSocket
     if (acceptable(ctx.request.serverRequest)) {
-      // Get connection details from the request
       const {
         conn,
         r: bufReader,
@@ -31,7 +30,6 @@ export class Middleware {
         headers,
       } = ctx.request.serverRequest;
       try {
-        // Create the WebSocket Connection
         const sock: WebSocket = await acceptWebSocket({
           conn,
           bufReader,
@@ -39,14 +37,14 @@ export class Middleware {
           headers,
         });
 
-        // Generate a SocketID and add it to the middlewares Socket Map
+        // Generate an ID for the websocket and store it in the Sockets Map
         const socketID: SocketID = v4.generate();
         this.sockets.set(socketID, sock);
-        // Create a new Socket class instance
         const ws = new Socket(socketID, this);
+        this.emit("connect", ws);
         await ws.open();
       } catch (error) {
-        console.error("Error creating a WebSocket connection");
+        console.log(error);
       }
     }
   }
