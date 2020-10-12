@@ -6,12 +6,12 @@ const wss = new oakWebSocket();
 
 wss.on("connect", async (sock) => {
   console.log("Socket Connected");
-  sock.join("my channel!");
 
   sock.on("joined", (room: Room) => {
     console.log(`Joined room ${room}`);
   });
-
+  sock.send("Hello World!");
+  sock.join("my channel!");
   sock.on("message", (message: string) => {
     console.log(message);
   });

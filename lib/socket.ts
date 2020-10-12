@@ -25,9 +25,7 @@ export class Socket extends EventEmitter {
     for await (const ev of sock) {
       if (typeof ev === "string") {
         this.emit("message", ev);
-        await sock.send("Works");
       } else if (ev instanceof Uint8Array) {
-        console.log(ev);
       } else if (isWebSocketCloseEvent(ev)) {
         // Cleanup socket on close event
         this.server.sockets.delete(this.SocketID);
@@ -41,6 +39,14 @@ export class Socket extends EventEmitter {
       }
     }
   }
+
+  public async send(message: string) {
+    const sock: WebSocket = this.server.sockets.get(this.SocketID);
+    sock.send(message);
+    console.log("Message Sent");
+  }
+
+  // TODO: emit to rooms only
 
   public async join(
     room: Room,
