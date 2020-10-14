@@ -40,13 +40,29 @@ export class Socket extends EventEmitter {
     }
   }
 
-  public async send(message: string) {
-    const sock: WebSocket = this.server.sockets.get(this.SocketID);
-    sock.send(message);
-    console.log("Message Sent");
+  // Handle multiple socket connections
+  // TODO: Update to represent its socket IDs
+  public async send(
+    message: string,
+    socks: Set<SocketID> | SocketID = this.SocketID
+  ) {
+    if (typeof socks === "string") {
+      const sock = this.server.sockets.get(socks);
+      sock.send(message);
+      console.log("Message Sent");
+    } else {
+      for (const socketID of socks) {
+        const sock = this.server.sockets.get(socketID);
+        sock.send(message);
+        console.log("Message Sent");
+      }
+    }
   }
 
-  // TODO: emit to rooms only
+  public to(room: Room): Set<SocketID> {
+    const socketIDs = this.server.rooms.get(room);
+    return socketIDs;
+  }
 
   public async join(
     room: Room,

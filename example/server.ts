@@ -15,6 +15,8 @@ wss.on("connect", async (sock) => {
   sock.on("message", (message: string) => {
     console.log(message);
   });
+
+  sock.to("Lobby").send("Hello World");
 });
 
 app.use(wss.connect);
